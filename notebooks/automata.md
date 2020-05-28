@@ -63,12 +63,11 @@ plt.imshow(image.transpose(0,2).cpu())
 ```python
 class Automata(nn.Module):
 
-    def __init__(self, grid_size, n_channels, seed_pos):
+    def __init__(self, grid_size, n_channels):
 
         super(Automata, self).__init__()
 
         self.n_channels = n_channels
-        self.seed_pos = seed_pos
         self.grid_size = grid_size
 
         self.filters = torch.Tensor([[[[-1, 0, 1],
@@ -134,22 +133,26 @@ class Automata(nn.Module):
 ```python
 n_epochs = 2500
 
-lr = 0.001
+lr = 0.0001
 
-model = Automata((64, 64), 16, (32, 32)).cuda()
+n_channels = 16
+
+model = Automata((64, 64), n_channels).cuda()
 
 criterion = nn.MSELoss()
 
 optimizer = torch.optim.Adam(model.parameters(), lr=lr)
-
-initial_state = torch.zeros(16, 1, 64, 64).cuda()
-initial_state[3:, 0, 32, 32] = 1
 
 losses = []
 
 for i in range(n_epochs):
     
     iterations = random.randint(64,96)
+    
+    initial_state = torch.rand(n_channels, 1, 32, 32).cuda()
+    initial_state = initial_state < 0.01
+    initial_state = initial_state.float()
+    initial_state = nn.functional.pad(initial_state,(16,16,16,16))
 
     out = model(initial_state,iterations)[:4].squeeze()
 
@@ -168,11 +171,36 @@ for i in range(n_epochs):
 ```
 
 ```python
+for i in range(n_epochs):
+    
+    iterations = random.randint(64,96)
+    
+    initial_state = torch.rand(n_channels, 1, 32, 32).cuda()
+    initial_state = initial_state < 0.01
+    initial_state = initial_state.float()
+    initial_state = nn.functional.pad(initial_state,(16,16,16,16))
 
-plt.imshow(out.transpose(0,2).cpu().detach())
+    out = model(initial_state,iterations)[:4].squeeze()
 
+    optimizer.zero_grad()
+
+    loss = criterion(out, image)
+
+    loss.backward()
+    optimizer.step()
+
+    if i % 100 == 0:
+    
+        print(i, float(loss.cpu().detach()))
+        
+    losses.append(loss)
 ```
 
 ```python
-plt.imshow(model.history[64][:4,0].transpose(0,2).cpu().detach())
+plt.plot(np.log10(losses))
+```
+
+```python
+plt.imshow(model.history[-1][:4,0].transpose(0,2).cpu().detach())
+
 ```
