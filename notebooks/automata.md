@@ -54,9 +54,13 @@ def load_emoji(emoji):
     return load_image(url)
 
 
-image = load_emoji("🥑")
+avocado = load_emoji("🥑")
+pineapple = load_emoji("🍍")
 
-plt.imshow(image.transpose(0,2).cpu())
+plt.imshow(avocado.transpose(0,2).cpu())
+plt.show()
+plt.imshow(pineapple.transpose(0,2).cpu())
+plt.show()
 
 img_size = 64
 ```
@@ -129,14 +133,12 @@ class Automata(nn.Module):
 
         for i in range(iterations):
 
-            conved = self.perception(x)
-
-            x = x + conved
+            x = x + self.perception(x)
 
             is_alive = nn.functional.max_pool2d(
                 x[:, 3], (3, 3), stride=1, padding=1) > 1/8
 
-            is_alive = is_alive[:, None]
+            is_alive = is_alive.unsqueeze(1)
 
             x = x*is_alive
 
@@ -156,6 +158,9 @@ lr = 0.001
 pool_size = 1024
 batch_size = 8
 
+image_1 = avocado
+image_2 = pineapple
+
 model = Automata((64, 64), n_channels).cuda()
 
 # initialize pool with seeds
@@ -163,7 +168,10 @@ seed = torch.zeros(n_channels,img_size,img_size).cuda()
 seed[3:,32,32] = 1
 
 pool_initials = seed[None, :].repeat(pool_size,1,1,1)
-pool_targets = image[None,:].repeat(pool_size,1,1,1)
+pool_targets = image_1[None,:].repeat(pool_size,1,1,1)
+pool_target_ids = torch.ones(pool_size)
+
+# 0 for seed, 1 for image_1, 2 for image_2
 
 losses = []
 
@@ -172,13 +180,14 @@ optimizer = torch.optim.Adam(model.parameters(), lr=lr)
 
 for i in range(n_epochs):
     
-    iterations = random.randint(64,96)
+#     iterations = random.randint(64,96)
+    iterations = 64
 
-    pool_indices = random.sample(range(pool_size),batch_size)
+    pool_indices = torch.Tensor(random.sample(range(pool_size),batch_size)).long()
         
     initial_states = pool_initials[pool_indices]
-    
     targets = pool_targets[pool_indices]
+    target_ids = pool_target_ids[pool_indices]
 
     out = model(initial_states,iterations)
     
@@ -194,10 +203,32 @@ for i in range(n_epochs):
     total_loss.backward()
     optimizer.step()
     
-    max_loss_idx = per_sample_loss.argmax()
+    max_loss_idx = per_sample_loss.topk(4).indices
+    
+    # switch half of the initial states
+    swap_indices = random.sample(range(batch_size),4)
+    
+    for swap_idx in swap_indices:
+        pool_idx = pool_indices[swap_idx]
+        target_id = int(pool_target_ids[pool_idx])
+        
+        # if output is the first image,
+        # switch the target to the second
+        if target_id == 1:
+            pool_targets[pool_idx] = image_2
+            pool_target_ids[pool_idx] = 2
+
+        # if output is the second image,
+        # make it stay there
+        if target_id == 2:
+            pool_targets[pool_idx] = image_2
+            pool_target_ids[pool_idx] = 2
     
     replacements = out.detach()
     replacements[max_loss_idx] = seed.clone()
+    
+    pool_targets[pool_indices[max_loss_idx]] = image_1
+    pool_target_ids[pool_indices[max_loss_idx]] = 1
 
     pool_initials[pool_indices] = replacements
 
@@ -213,7 +244,11 @@ plt.plot(np.log10(losses))
 ```
 
 ```python
-plt.imshow(pool_initials[589,:4].transpose(0,2).cpu())
+pool_target_ids[:100]
+```
+
+```python
+plt.imshow(pool_targets[0,:4].transpose(0,2).cpu())
 ```
 
 ```python
