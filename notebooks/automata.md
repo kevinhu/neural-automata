@@ -134,7 +134,7 @@ class Automata(nn.Module):
             x = x + conved
 
             is_alive = nn.functional.max_pool2d(
-                x[:, 3], (3, 3), stride=1, padding=1) > 0.1
+                x[:, 3], (3, 3), stride=1, padding=1) > 1/8
 
             is_alive = is_alive[:, None]
 
@@ -151,7 +151,7 @@ class Automata(nn.Module):
 
 ```python
 n_channels = 16
-n_epochs = 2500
+n_epochs = 5000
 lr = 0.001
 pool_size = 1024
 batch_size = 8
@@ -173,21 +173,12 @@ optimizer = torch.optim.Adam(model.parameters(), lr=lr)
 for i in range(n_epochs):
     
     iterations = random.randint(64,96)
-    
-#     initial_state = torch.rand(n_channels, 1, 32, 32).cuda()
-#     initial_state = initial_state < 0.01
-#     initial_state = initial_state.float()
-#     initial_state = nn.functional.pad(initial_state,(16,16,16,16))
 
     pool_indices = random.sample(range(pool_size),batch_size)
         
     initial_states = pool_initials[pool_indices]
     
     targets = pool_targets[pool_indices]
-
-
-#     initial_state = torch.zeros(1,n_channels, 64, 64).cuda()
-#     initial_state[0,3:,32,32] = 1
 
     out = model(initial_states,iterations)
     
@@ -203,9 +194,6 @@ for i in range(n_epochs):
     total_loss.backward()
     optimizer.step()
     
-    # re-insert back to the pool
-    
-#     if i > 100:
     max_loss_idx = per_sample_loss.argmax()
     
     replacements = out.detach()
@@ -215,7 +203,7 @@ for i in range(n_epochs):
 
     if i % 10 == 0:
     
-        print(i, float(total_loss.cpu().detach()))
+        print(i, np.log10(float(total_loss.cpu().detach())))
         
     losses.append(float(total_loss))
 ```
@@ -225,15 +213,11 @@ plt.plot(np.log10(losses))
 ```
 
 ```python
-pool_indices
-```
-
-```python
 plt.imshow(pool_initials[589,:4].transpose(0,2).cpu())
 ```
 
 ```python
-out = model(seed[None,:],256,keep_history=True).squeeze()
+out = model(seed[None,:],512,keep_history=True).squeeze()
 ```
 
 ```python
