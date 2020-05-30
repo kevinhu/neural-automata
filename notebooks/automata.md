@@ -34,7 +34,7 @@ import io
 ```
 
 ```python
-def load_image(url, max_size=32, padding=16):
+def load_image(url, max_size=40, padding=12):
     r = requests.get(url)
     img = Image.open(io.BytesIO(r.content))
     img.thumbnail((max_size, max_size), Image.ANTIALIAS)
@@ -56,7 +56,7 @@ def load_emoji(emoji):
 
 
 avocado = load_emoji("🥑")
-pineapple = load_emoji("🥡")
+pineapple = load_emoji("🍍")
 
 plt.imshow(avocado.transpose(0,2).cpu())
 plt.show()
@@ -90,9 +90,9 @@ class Automata(nn.Module):
                                        ]]]).cuda()
 
         self.mapper = nn.Sequential(
-            nn.Linear(3*n_channels, 128),
+            nn.Linear(3*n_channels, 256),
             nn.ReLU(),
-            nn.Linear(128, n_channels),
+            nn.Linear(256, n_channels),
             nn.Tanh()
         )
 
@@ -158,9 +158,9 @@ class Automata(nn.Module):
 ```python
 n_channels = 16
 n_epochs = 1000
-lr = 0.01
+lr = 0.001
 pool_size = 1024
-batch_size = 32
+batch_size = 16
 
 image_1 = avocado
 image_2 = pineapple
@@ -184,6 +184,80 @@ losses = []
 criterion = nn.MSELoss(reduction='none')
 optimizer = torch.optim.Adam(model.parameters(), lr=lr)
 
+for i in range(n_epochs):
+    
+#     iterations = random.randint(64,96)
+    iterations = 100
+
+    pool_indices = torch.Tensor(random.sample(range(pool_size),batch_size)).long()
+        
+    initial_states = pool_initials[pool_indices]
+    targets = pool_targets[pool_indices]
+    target_ids = pool_target_ids[pool_indices]
+
+    out = model(initial_states,iterations)
+    
+    phenotypes = out[:,:4].squeeze()
+
+    optimizer.zero_grad()
+
+    loss = criterion(phenotypes, targets)
+    
+    per_sample_loss = loss.mean((1,2,3))
+    total_loss = per_sample_loss.mean()
+
+    total_loss.backward()
+    optimizer.step()
+    
+    # argsort the losses per sample
+    ranked_loss = per_sample_loss.argsort()
+    
+    # get indices of min- and max-loss samples
+    min_loss_indices = ranked_loss[:batch_size//2]
+    max_loss_indices = ranked_loss[batch_size//2:]
+    
+    # switch the min-loss samples
+    
+#     for swap_idx in min_loss_indices:
+#         pool_idx = pool_indices[swap_idx]
+#         target_id = int(pool_target_ids[pool_idx])
+        
+#         # if output is the first image,
+#         # switch the target to the second
+#         if target_id == 1:
+#             pool_targets[pool_idx] = image_2
+#             pool_target_ids[pool_idx] = 2
+
+#         # if output is the second image,
+#         # keep it
+#         if target_id == 2:
+#             pool_targets[pool_idx] = image_2
+#             pool_target_ids[pool_idx] = 2
+    
+    replacements = out.detach()
+    replacements[max_loss_indices] = seed.clone()
+    
+    # high-loss outputs are re-tasked with
+    # mapping the seed to the first image,
+    
+    # low-loss outputs are tasked with mapping
+    # mapping to the other image
+    pool_target_ids[pool_indices[max_loss_indices]] = 0
+    pool_target_ids[pool_indices[min_loss_indices]] = 1-pool_target_ids[pool_indices[min_loss_indices]]
+    
+    pool_targets[pool_indices[max_loss_indices]] = images[0]
+    pool_targets[pool_indices[min_loss_indices]] = images[pool_target_ids[pool_indices[min_loss_indices]]]
+
+    pool_initials[pool_indices] = replacements
+
+    if i % 100 == 0:
+    
+        print(i, np.log10(float(total_loss.cpu().detach())))
+        
+    losses.append(float(total_loss))
+```
+
+```python
 for i in range(n_epochs):
     
 #     iterations = random.randint(64,96)
