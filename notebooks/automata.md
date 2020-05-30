@@ -153,13 +153,15 @@ class Automata(nn.Module):
 
 ```python
 n_channels = 16
-n_epochs = 5000
+n_epochs = 10000
 lr = 0.001
 pool_size = 1024
 batch_size = 8
 
 image_1 = avocado
 image_2 = pineapple
+
+images = torch.stack([image_1,image_2])
 
 model = Automata((64, 64), n_channels).cuda()
 
@@ -169,9 +171,9 @@ seed[3:,32,32] = 1
 
 pool_initials = seed[None, :].repeat(pool_size,1,1,1)
 pool_targets = image_1[None,:].repeat(pool_size,1,1,1)
-pool_target_ids = torch.ones(pool_size)
 
-# 0 for seed, 1 for image_1, 2 for image_2
+pool_target_ids = torch.zeros(pool_size).long()
+# 0 for image_1, 1 for image_2
 
 losses = []
 
@@ -235,16 +237,16 @@ for i in range(n_epochs):
     # mapping the seed to the first image,
     
     # low-loss outputs are tasked with mapping
-    # the output to the second
-    pool_targets[pool_indices[max_loss_indices]] = image_1
-    pool_targets[pool_indices[min_loss_indices]] = image_2
+    # mapping to the other image
+    pool_target_ids[pool_indices[max_loss_indices]] = 0
+    pool_target_ids[pool_indices[min_loss_indices]] = 1-pool_target_ids[pool_indices[min_loss_indices]]
     
-    pool_target_ids[pool_indices[max_loss_indices]] = 1
-    pool_target_ids[pool_indices[min_loss_indices]] = 2
+    pool_targets[pool_indices[max_loss_indices]] = images[0]
+    pool_targets[pool_indices[min_loss_indices]] = images[pool_target_ids[pool_indices[min_loss_indices]]]
 
     pool_initials[pool_indices] = replacements
 
-    if i % 10 == 0:
+    if i % 100 == 0:
     
         print(i, np.log10(float(total_loss.cpu().detach())))
         
@@ -256,21 +258,11 @@ plt.plot(np.log10(losses))
 ```
 
 ```python
-pool_target_ids[:100]
-```
-
-```python
-plt.imshow(pool_initials[16,:4].transpose(0,2).cpu())
-```
-
-```python
-out = model(seed[None,:],512,keep_history=True).squeeze()
-```
-
-```python
-video = model.history.cpu().detach()
-video = video[:,0,:4]
-video = video.transpose(1,3)
+with torch.no_grad():
+    out = model(seed[None,:],1024,keep_history=True)
+    video = model.history.cpu().detach()
+    video = video[:,0,:4]
+    video = video.transpose(1,3)
 ```
 
 ```python
@@ -292,8 +284,4 @@ def animate(i):
 anim = animation.FuncAnimation(fig, animate, init_func=init,  frames=video.shape[0],
                                interval=50)
 HTML(anim.to_html5_video())
-```
-
-```python
-
 ```
