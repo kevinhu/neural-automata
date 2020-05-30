@@ -55,7 +55,7 @@ def load_emoji(emoji):
 
 
 avocado = load_emoji("🥑")
-pineapple = load_emoji("🍍")
+pineapple = load_emoji("🥡")
 
 plt.imshow(avocado.transpose(0,2).cpu())
 plt.show()
@@ -119,7 +119,7 @@ class Automata(nn.Module):
 
         conved = conved.view(self.batch_size, self.n_channels, *self.grid_size)
 
-        can_update = torch.rand_like(conved) < 0.75
+        can_update = torch.rand_like(conved) < 0.5
 
         return conved*can_update
 
@@ -181,7 +181,7 @@ optimizer = torch.optim.Adam(model.parameters(), lr=lr)
 for i in range(n_epochs):
     
 #     iterations = random.randint(64,96)
-    iterations = 64
+    iterations = 100
 
     pool_indices = torch.Tensor(random.sample(range(pool_size),batch_size)).long()
         
@@ -203,32 +203,44 @@ for i in range(n_epochs):
     total_loss.backward()
     optimizer.step()
     
-    max_loss_idx = per_sample_loss.topk(4).indices
+    # argsort the losses per sample
+    ranked_loss = per_sample_loss.argsort()
     
-    # switch half of the initial states
-    swap_indices = random.sample(range(batch_size),4)
+    # get indices of min- and max-loss samples
+    min_loss_indices = ranked_loss[:batch_size//2]
+    max_loss_indices = ranked_loss[batch_size//2:]
     
-    for swap_idx in swap_indices:
-        pool_idx = pool_indices[swap_idx]
-        target_id = int(pool_target_ids[pool_idx])
+    # switch the min-loss samples
+    
+#     for swap_idx in min_loss_indices:
+#         pool_idx = pool_indices[swap_idx]
+#         target_id = int(pool_target_ids[pool_idx])
         
-        # if output is the first image,
-        # switch the target to the second
-        if target_id == 1:
-            pool_targets[pool_idx] = image_2
-            pool_target_ids[pool_idx] = 2
+#         # if output is the first image,
+#         # switch the target to the second
+#         if target_id == 1:
+#             pool_targets[pool_idx] = image_2
+#             pool_target_ids[pool_idx] = 2
 
-        # if output is the second image,
-        # make it stay there
-        if target_id == 2:
-            pool_targets[pool_idx] = image_2
-            pool_target_ids[pool_idx] = 2
+#         # if output is the second image,
+#         # keep it
+#         if target_id == 2:
+#             pool_targets[pool_idx] = image_2
+#             pool_target_ids[pool_idx] = 2
     
     replacements = out.detach()
-    replacements[max_loss_idx] = seed.clone()
+    replacements[max_loss_indices] = seed.clone()
     
-    pool_targets[pool_indices[max_loss_idx]] = image_1
-    pool_target_ids[pool_indices[max_loss_idx]] = 1
+    # high-loss outputs are re-tasked with
+    # mapping the seed to the first image,
+    
+    # low-loss outputs are tasked with mapping
+    # the output to the second
+    pool_targets[pool_indices[max_loss_indices]] = image_1
+    pool_targets[pool_indices[min_loss_indices]] = image_2
+    
+    pool_target_ids[pool_indices[max_loss_indices]] = 1
+    pool_target_ids[pool_indices[min_loss_indices]] = 2
 
     pool_initials[pool_indices] = replacements
 
@@ -248,7 +260,7 @@ pool_target_ids[:100]
 ```
 
 ```python
-plt.imshow(pool_targets[0,:4].transpose(0,2).cpu())
+plt.imshow(pool_initials[16,:4].transpose(0,2).cpu())
 ```
 
 ```python
@@ -280,4 +292,8 @@ def animate(i):
 anim = animation.FuncAnimation(fig, animate, init_func=init,  frames=video.shape[0],
                                interval=50)
 HTML(anim.to_html5_video())
+```
+
+```python
+
 ```
