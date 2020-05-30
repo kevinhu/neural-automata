@@ -17,9 +17,10 @@ import torch
 from torch import nn
 
 import torch.functional as F
+import torchvision.transforms.functional as TF
+import torch.utils.checkpoint as checkpoint
 
 from PIL import Image
-import torchvision.transforms.functional as TF
 
 import matplotlib.pyplot as plt
 import matplotlib as mpl
@@ -130,10 +131,13 @@ class Automata(nn.Module):
             model.history = torch.zeros(iterations, *x.shape)
 
         model.batch_size = x.shape[0]
+        
+        x.requires_grad = True
 
         for i in range(iterations):
 
-            x = x + self.perception(x)
+            x = x + checkpoint.checkpoint(self.perception,x)
+#             x = x+self.perception(x)
 
             is_alive = nn.functional.max_pool2d(
                 x[:, 3], (3, 3), stride=1, padding=1) > 1/8
@@ -146,17 +150,17 @@ class Automata(nn.Module):
 
             if keep_history:
 
-                model.history[i] = x
+                model.history[i] = x.detach()
 
         return x
 ```
 
 ```python
 n_channels = 16
-n_epochs = 10000
-lr = 0.001
+n_epochs = 1000
+lr = 0.01
 pool_size = 1024
-batch_size = 8
+batch_size = 32
 
 image_1 = avocado
 image_2 = pineapple
