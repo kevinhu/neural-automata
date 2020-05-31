@@ -137,7 +137,6 @@ class Automata(nn.Module):
         for i in range(iterations):
 
             x = x + checkpoint.checkpoint(self.perception,x)
-#             x = x+self.perception(x)
 
             is_alive = nn.functional.max_pool2d(
                 x[:, 3], (3, 3), stride=1, padding=1) > 1/8
@@ -244,58 +243,6 @@ for i in range(n_epochs):
 ```
 
 ```python
-for i in range(n_epochs):
-    
-    iterations = random.randint(64,96)
-
-    pool_indices = torch.Tensor(random.sample(range(pool_size),batch_size)).long()
-        
-    initial_states = pool_initials[pool_indices]
-    targets = pool_targets[pool_indices]
-    target_ids = pool_target_ids[pool_indices]
-
-    out = model(initial_states,iterations)
-    
-    phenotypes = out[:,:4].squeeze()
-
-    optimizer.zero_grad()
-
-    loss = criterion(phenotypes, targets)
-    
-    per_sample_loss = loss.mean((1,2,3))
-    total_loss = per_sample_loss.mean()
-
-    total_loss.backward()
-    optimizer.step()
-    
-    # argsort the losses per sample
-    ranked_loss = per_sample_loss.argsort()
-    
-    # get indices of min- and max-loss samples
-    min_loss_indices = ranked_loss[:batch_size//2]
-    max_loss_indices = ranked_loss[batch_size//2:]
-    
-    replacements = out.detach()
-    
-    max_loss_targets = target_ids[max_loss_indices]
-    
-    # high-loss outputs are re-tasked with
-    # mapping the seeds to the respective image
-    
-    # low-loss outputs are tasked with mapping
-    # the previous output to the same image
-    
-    replacements[max_loss_indices] = seeds[max_loss_targets]
-    pool_initials[pool_indices] = replacements
-    
-    if i % 100 == 0:
-    
-        print(i, np.log10(float(total_loss.cpu().detach())))
-        
-    losses.append(float(total_loss))
-```
-
-```python
 plt.plot(np.log10(losses))
 ```
 
@@ -310,9 +257,7 @@ with torch.no_grad():
     video = model.history.cpu().detach()
     video = video[:,0,:4]
     video = video.transpose(1,3)
-```
 
-```python
 from matplotlib import animation
 from IPython.display import HTML
 
