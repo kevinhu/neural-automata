@@ -130,7 +130,7 @@ class Automata(nn.Module):
             neighbor_density = nn.functional.conv2d(alive_indicators, neighborhood_kernel)
             neighbor_density = neighbor_density[:,0]
             
-            too_dense = neighbor_density.unsqueeze(1) < float(neighborhood_kernel.sum()*0.5)
+            too_dense = neighbor_density.unsqueeze(1) < float(neighborhood_kernel.sum()*0.25)
             
             is_alive = next_alive*too_dense
             
@@ -177,9 +177,12 @@ for i in range(n_epochs):
 
     optimizer.zero_grad()
     
-    vitality_loss = -out[:, 3].mean()*0.1
-    stability_loss = ((out[:, 3] - prev[:, 3])**2).mean()
-
+    alives = out[:, 3]
+    prev_alives = prev[:, 3]
+    
+    vitality_loss = -alives.mean()*0.1
+    stability_loss = ((alives - prev_alives)**2).mean()
+    
     loss = vitality_loss + stability_loss
 
     loss.backward()
@@ -198,7 +201,7 @@ plt.plot(losses)
 
 ```python
 with torch.no_grad():
-    out = model(seed[None,:],256,keep_history=True)
+    out = model(seed[None,:],512,keep_history=True)
     video = model.history.cpu().detach()
     video = video[:,0,:4]
     video = video.transpose(1,3)
