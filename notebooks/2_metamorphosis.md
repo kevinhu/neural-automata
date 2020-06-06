@@ -165,6 +165,6 @@ model.load_state_dict(torch.load(
 
 ```python
 video = utils.get_model_history(model, seed, 1000)
-utils.channels_to_gif("../metamorphosis_channels.gif", video)
-utils.colors_to_gif("../metamorphosis_colors.gif", video)
+utils.channels_to_gif("../videos/metamorphosis_channels.gif", video)
+utils.colors_to_gif("../videos/metamorphosis_colors.gif", video)
 ```

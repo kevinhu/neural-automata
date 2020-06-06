@@ -164,7 +164,7 @@ plt.plot(np.log10(losses))
 
 ```python
 model.load_state_dict(torch.load(
-    "../models/divergence_10000", map_location=torch.device('cpu')))
+    "../models/divergence_9900", map_location=torch.device('cpu')))
 ```
 
 ```python
