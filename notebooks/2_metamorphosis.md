@@ -30,9 +30,13 @@ import random
 import models
 import utils
 
+from PIL import Image
+
 use_cuda = torch.cuda.is_available()
 device = torch.device("cuda:0" if use_cuda else "cpu")
 ```
+
+# Load images
 
 ```python
 image_1 = utils.load_emoji("🐞",32,16).to(device)
@@ -46,6 +50,11 @@ plt.show()
 img_size = 64
 ```
 
+# Set up model and pool
+
+
+## Hyperparameters
+
 ```python
 n_channels = 16
 n_epochs = 10000
@@ -56,10 +65,14 @@ hidden_size = 128
 
 images = torch.stack([image_1,image_2])
 
-model = models.Automata((64, 64), n_channels, hidden_size, device).cuda()
+model = models.Automata((64, 64), n_channels, hidden_size, device).to(device)
+```
 
+## Initialize pool
+
+```python
 # initialize pool with seeds
-seed = torch.zeros(n_channels,img_size,img_size).cuda()
+seed = torch.zeros(n_channels,img_size,img_size).to(device)
 seed[3:,32,32] = 1
 
 pool_initials = seed[None, :].repeat(pool_size,1,1,1)
@@ -67,7 +80,11 @@ pool_targets = image_1[None,:].repeat(pool_size,1,1,1)
 
 pool_target_ids = torch.zeros(pool_size).long()
 # 0 for image_1, 1 for image_2
+```
 
+# Train model
+
+```python
 losses = []
 
 criterion = nn.MSELoss(reduction='none')
@@ -75,7 +92,6 @@ optimizer = torch.optim.Adam(model.parameters(), lr=lr)
 
 for i in range(n_epochs):
     
-#     iterations = random.randint(64,96)
     iterations = 100
 
     pool_indices = torch.Tensor(random.sample(range(pool_size),batch_size)).long()
@@ -104,24 +120,6 @@ for i in range(n_epochs):
     # get indices of min- and max-loss samples
     min_loss_indices = ranked_loss[:-batch_size//8]
     max_loss_indices = ranked_loss[-batch_size//8:]
-    
-    # switch the min-loss samples
-    
-#     for swap_idx in min_loss_indices:
-#         pool_idx = pool_indices[swap_idx]
-#         target_id = int(pool_target_ids[pool_idx])
-        
-#         # if output is the first image,
-#         # switch the target to the second
-#         if target_id == 1:
-#             pool_targets[pool_idx] = image_2
-#             pool_target_ids[pool_idx] = 2
-
-#         # if output is the second image,
-#         # keep it
-#         if target_id == 2:
-#             pool_targets[pool_idx] = image_2
-#             pool_target_ids[pool_idx] = 2
     
     replacements = out.detach()
     replacements[max_loss_indices] = seed.clone()
@@ -152,29 +150,14 @@ for i in range(n_epochs):
 plt.plot(np.log10(losses))
 ```
 
+# Load model checkpoint
+
 ```python
-with torch.no_grad():
-    out = model(seed[None,:],1024,keep_history=True)
-    video = model.history.cpu().detach()
-    video = video[:,0,:4]
-    video = video.transpose(1,3)
+model.load_state_dict(torch.load("../models/metamorphosis_9900",map_location=torch.device('cpu')))
+```
 
-from matplotlib import animation
-from IPython.display import HTML
-
-fig = plt.figure()
-im = plt.imshow(video[0,:,:,:])
-
-plt.close()
-
-def init():
-    im.set_data(video[0,:,:,:])
-
-def animate(i):
-    im.set_data(video[i,:,:,:])
-    return im
-
-anim = animation.FuncAnimation(fig, animate, init_func=init,  frames=video.shape[0],
-                               interval=50)
-HTML(anim.to_html5_video())
+```python
+video = utils.get_model_history(model, seed, 1000)
+utils.channels_to_gif("../metamorphosis_channels.gif", video)
+utils.colors_to_gif("../metamorphosis_colors.gif", video)
 ```
