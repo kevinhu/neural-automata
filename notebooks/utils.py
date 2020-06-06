@@ -11,24 +11,64 @@ import torch
 
 
 def load_image(url, size, padding):
+    """
+    Load an image in RGBA format from a URL, and
+    apply transparent padding, returning as a
+    PyTorch tensor
+
+    Parameters
+    ----------
+    url: string
+        source URL of the image
+    size: (int, int)
+        (rows, columns) size of the image to resize
+    padding: int
+        padding to apply equally around image
+
+    Returns
+    -------
+    img: image in (channels, rows, columns) format
+    """
 
     r = requests.get(url)
     img = Image.open(io.BytesIO(r.content))
 
     img = img.resize((size, size), Image.ANTIALIAS)
 
+    # normalize image intensities to (0,1) range
     img = np.float32(img)/255.0
     img = np.pad(img, ((padding, padding), (padding, padding), (0, 0)))
 
+    # multiply intensities by alphas
     img[..., :3] *= img[..., 3:]
 
     img = torch.Tensor(img).float()
+
+    # move channels to first axis
     img = img.transpose(0, 2)
 
     return img
 
 
 def load_emoji(emoji, size, padding):
+    """
+    Loads the image tensor of an emoji
+    (in Apple emoji format)
+
+    Parameters
+    ----------
+    emoji: string
+        the emoji to load
+    size: (int, int)
+        (rows, columns) size of the emoji to resize
+    padding: int
+        padding to apply equally around emoji
+
+    Returns
+    -------
+    img: emoji in (channels, rows, columns) format
+    """
+
     code = hex(ord(emoji))[2:].lower()
     print(code)
     url = 'https://github.com/samuelngs/apple-emoji-linux/raw/master/png/128/emoji_u%s.png' % code
@@ -36,6 +76,18 @@ def load_emoji(emoji, size, padding):
 
 
 def normalize(a):
+    """
+    Normalize an array to the [0,1] range
+
+    Parameters
+    ----------
+    a: array
+        array to normalize
+
+    Returns
+    -------
+    a: normalized array
+    """
 
     a = a-a.min()
     a = a/a.max()
@@ -44,6 +96,22 @@ def normalize(a):
 
 
 def get_model_history(model, seed_state, iterations):
+    """
+    Get the iterations of an automata model from a seed state
+
+    Parameters
+    ----------
+    model: Automata
+        model to run
+    seed_state: tensor
+                initial state, of shape (channels, rows, columns)
+        iterations: int
+                number of iterations to execute
+
+    Returns
+    -------
+    video: the iterations, in shape (iterations, rows, columns, channels)
+    """
 
     with torch.no_grad():
         out = model(seed_state[None, :], iterations, keep_history=True)
@@ -57,12 +125,29 @@ def get_model_history(model, seed_state, iterations):
 def channels_to_gif(output_path,
                     video,
                     fps=60,
-                    grid_size=(64, 64),
                     row_channels=4,
                     col_channels=4):
+    """
+    Save a GIF of the channels over time, given the output
+    of `get_model_history`
+
+    Parameters
+    ----------
+    output_path: string
+        path to save the GIF to
+    video: array
+        output of `get_model_history`
+    fps: int
+        frames per second of output GIF
+    row_channels: int
+        number of channels to place on each row in the GIF
+    col_channels: int
+        number of channels to place on each column in the GIF
+    """
 
     iterations = video.shape[0]
     channel_count = video.shape[-1]
+    grid_size = (video.shape[1], video.shape[2])
 
     assert row_channels * \
         col_channels == channel_count, "Row-column channel product must equal total channel count"
@@ -96,8 +181,20 @@ def channels_to_gif(output_path,
 
 def colors_to_gif(output_path,
                   video,
-                  fps=60,
-                  grid_size=(64, 64)):
+                  fps=60):
+    """
+    Save a GIF of the first 4 RGBA channels, given
+    the output of `get_model_history
+
+    Parameters
+    ----------
+    output_path: string
+        path to save the GIF to
+    video: array
+        output of `get_model_history`
+    fps: int
+        frames per second of output GIF
+    """
 
     video = video[:, :, :, :4]
     video = video*255
@@ -106,7 +203,7 @@ def colors_to_gif(output_path,
     video = video.repeat(4, axis=1).repeat(4, axis=2)
 
     background = Image.new(
-        'RGBA', (grid_size[0]*4, grid_size[1]*4), (255, 255, 255))
+        'RGBA', (video.shape[1], video.shape[2]), (255, 255, 255))
 
     video = [Image.fromarray(x, 'RGBA') for x in video]
     video = [Image.alpha_composite(background, x) for x in video]

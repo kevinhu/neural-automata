@@ -4,3 +4,5 @@ matplotlib
 seaborn
 numpy
 Pillow
+imageio
+imageio_ffmpeg
