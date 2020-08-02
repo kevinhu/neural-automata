@@ -5,7 +5,7 @@ jupyter:
       extension: .md
       format_name: markdown
       format_version: '1.2'
-      jupytext_version: 1.4.2
+      jupytext_version: 1.5.0
   kernelspec:
     display_name: Python 3
     language: python
@@ -28,6 +28,7 @@ import numpy as np
 import random
 
 import sys
+
 sys.path.append("../includes")
 
 import models
@@ -90,15 +91,14 @@ pool_target_ids = torch.zeros(pool_size).long()
 ```python
 losses = []
 
-criterion = nn.MSELoss(reduction='none')
+criterion = nn.MSELoss(reduction="none")
 optimizer = torch.optim.Adam(model.parameters(), lr=lr)
 
 for i in range(n_epochs):
 
     iterations = 100
 
-    pool_indices = torch.Tensor(random.sample(
-        range(pool_size), batch_size)).long()
+    pool_indices = torch.Tensor(random.sample(range(pool_size), batch_size)).long()
 
     initial_states = pool_initials[pool_indices]
     targets = pool_targets[pool_indices]
@@ -122,8 +122,8 @@ for i in range(n_epochs):
     ranked_loss = per_sample_loss.argsort()
 
     # get indices of min- and max-loss samples
-    min_loss_indices = ranked_loss[:-batch_size//8]
-    max_loss_indices = ranked_loss[-batch_size//8:]
+    min_loss_indices = ranked_loss[: -batch_size // 8]
+    max_loss_indices = ranked_loss[-batch_size // 8 :]
 
     replacements = out.detach()
     replacements[max_loss_indices] = seed.clone()
@@ -134,12 +134,14 @@ for i in range(n_epochs):
     # low-loss outputs are tasked with mapping
     # mapping to the other image
     pool_target_ids[pool_indices[max_loss_indices]] = 0
-    pool_target_ids[pool_indices[min_loss_indices]] = 1 - \
-        pool_target_ids[pool_indices[min_loss_indices]]
+    pool_target_ids[pool_indices[min_loss_indices]] = (
+        1 - pool_target_ids[pool_indices[min_loss_indices]]
+    )
 
     pool_targets[pool_indices[max_loss_indices]] = images[0]
-    pool_targets[pool_indices[min_loss_indices]
-                 ] = images[pool_target_ids[pool_indices[min_loss_indices]]]
+    pool_targets[pool_indices[min_loss_indices]] = images[
+        pool_target_ids[pool_indices[min_loss_indices]]
+    ]
 
     pool_initials[pool_indices] = replacements
 
@@ -147,7 +149,7 @@ for i in range(n_epochs):
 
         print(i, np.log10(float(total_loss.cpu().detach())))
 
-        torch.save(model.state_dict(), "../models/metamorphosis_"+str(i))
+        torch.save(model.state_dict(), "../models/metamorphosis_" + str(i))
 
     losses.append(float(total_loss))
 ```
@@ -159,8 +161,9 @@ plt.plot(np.log10(losses))
 # Load model checkpoint
 
 ```python
-model.load_state_dict(torch.load(
-    "../models/metamorphosis_9900", map_location=torch.device('cpu')))
+model.load_state_dict(
+    torch.load("../models/metamorphosis_9900", map_location=torch.device("cpu"))
+)
 ```
 
 ```python
