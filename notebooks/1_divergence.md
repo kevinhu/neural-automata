@@ -5,12 +5,16 @@ jupyter:
       extension: .md
       format_name: markdown
       format_version: '1.2'
-      jupytext_version: 1.5.0
+      jupytext_version: 1.4.2
   kernelspec:
     display_name: Python 3
     language: python
     name: python3
 ---
+
+```python
+! poetry run python -m ipykernel install --user
+```
 
 ```python
 import torch
@@ -55,14 +59,11 @@ plt.show()
 img_size = 64
 ```
 
-# Set up model and pool
-
-
-## Hyperparameters
+# Initialize model
 
 ```python
 n_channels = 16
-n_epochs = 10000
+n_epochs = 500
 lr = 0.001
 pool_size = 1024
 batch_size = 16
@@ -71,7 +72,7 @@ hidden_size = 64
 model = models.Automata((64, 64), n_channels, hidden_size, device).to(device)
 ```
 
-## Initialize pool
+# Initialize pool
 
 ```python
 images = torch.stack([image_1, image_2])
@@ -87,10 +88,10 @@ seed_1[4, 32, 32] = 0
 
 seeds = torch.stack([seed_1, seed_2])
 
-pool_initials = seeds.repeat(pool_size // 2, 1, 1, 1)
-pool_targets = images.repeat(pool_size // 2, 1, 1, 1)
+pool_initials = seeds.repeat(pool_size//2, 1, 1, 1)
+pool_targets = images.repeat(pool_size//2, 1, 1, 1)
 
-pool_target_ids = torch.Tensor([0, 1]).repeat(pool_size // 2).long()
+pool_target_ids = torch.Tensor([0, 1]).repeat(pool_size//2).long()
 # 0 for image_1, 1 for image_2
 # half image 1, half image 2
 ```
@@ -100,14 +101,15 @@ pool_target_ids = torch.Tensor([0, 1]).repeat(pool_size // 2).long()
 ```python
 losses = []
 
-criterion = nn.MSELoss(reduction="none")
+criterion = nn.MSELoss(reduction='none')
 optimizer = torch.optim.Adam(model.parameters(), lr=lr)
 
 for i in range(n_epochs):
 
     iterations = random.randint(96, 128)
 
-    pool_indices = torch.Tensor(random.sample(range(pool_size), batch_size)).long()
+    pool_indices = torch.Tensor(random.sample(
+        range(pool_size), batch_size)).long()
 
     initial_states = pool_initials[pool_indices]
     targets = pool_targets[pool_indices]
@@ -151,7 +153,7 @@ for i in range(n_epochs):
 
         print(i, np.log10(float(total_loss.cpu().detach())))
 
-        torch.save(model.state_dict(), "../models/divergence_" + str(i))
+        torch.save(model.state_dict(), "../models/divergence_"+str(i))
 
     losses.append(float(total_loss))
 ```
