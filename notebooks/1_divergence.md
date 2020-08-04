@@ -48,8 +48,8 @@ device = torch.device("cuda:0" if use_cuda else "cpu")
 # Load images
 
 ```python
-image_1 = utils.load_emoji("🐞", 32, 16).to(device)
-image_2 = utils.load_emoji("🦋", 32, 16).to(device)
+image_1 = utils.load_emoji("🍇", 32, 16).to(device)
+image_2 = utils.load_emoji("🥑", 32, 16).to(device)
 
 plt.imshow(image_1.transpose(0, 2).cpu())
 plt.show()
@@ -63,7 +63,7 @@ img_size = 64
 
 ```python
 n_channels = 16
-n_epochs = 500
+n_epochs = 10000
 lr = 0.001
 pool_size = 1024
 batch_size = 16

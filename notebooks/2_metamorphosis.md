@@ -43,7 +43,7 @@ device = torch.device("cuda:0" if use_cuda else "cpu")
 # Load images
 
 ```python
-image_1 = utils.load_emoji("🐞", 32, 16).to(device)
+image_1 = utils.load_emoji("🐛", 32, 16).to(device)
 image_2 = utils.load_emoji("🦋", 32, 16).to(device)
 
 plt.imshow(image_1.transpose(0, 2).cpu())
