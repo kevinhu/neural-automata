@@ -46,6 +46,17 @@ It's likely possible to chain even more stages together, and it would be interes
 
 ### 3. Alternative objectives
 
+Besides setting image targets, it's also possible to specify other cost functions. In [3_optimization.ipynb](https://github.com/kevinhu/neural-automata/blob/master/notebooks/3_optimization.ipynb), a network with the same architecture is trained with two objectives:
+
+1. Vitality: maximize the sum of 'alive' state values (the 4th channel).
+2. Stability: minimize the discrepancy between the end and penultimate states.
+
+To prevent the trivial solution of a blanket coat, at each iteration a circular mask is applied such that each cell can only have a certain number of neighbors. The end result is an interesting layout that bears some resemblance to a [Turing pattern](https://en.wikipedia.org/wiki/Turing_pattern). Here, all 16 channels are shown in parallel.
+
+<p align="center">
+  <img src="https://github.com/kevinhu/neural-automata/blob/master/videos/optimization_channels.gif">
+</p>
+
 ## Getting started
 
 1. Install dependencies: `poetry install` (from within the repository)
