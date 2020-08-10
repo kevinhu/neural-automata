@@ -14,7 +14,7 @@ This repository modifies the training environment to show some new properties.
 
 ### 1. Coupling of seed states to targets
 
-In [1_divergence.ipynb](https://github.com/kevinhu/neural-automata/blob/master/notebooks/1_divergence.ipynb) two different seed states are trained to grow into two different target states under the same update network. The difference between the seeds is a single value at the 4th index of the center vector, which is 0 for one state and 1 for the other. Using just this difference, the network successfully produces entirely different outputs.
+In [1_divergence.ipynb](https://github.com/kevinhu/neural-automata/blob/master/notebooks/1_divergence.ipynb) two different seed states are trained to grow into two different target states under the same update network. The difference between the seeds is a single value at the 5th index of the center vector, which is 0 for one state and 1 for the other. Using just this difference, the network successfully produces entirely different outputs.
 
 Here is the output of the first seed:
 
