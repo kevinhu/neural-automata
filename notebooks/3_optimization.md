@@ -36,6 +36,9 @@ import sys
 sys.path.append("../includes")
 
 import utils
+
+use_cuda = torch.cuda.is_available()
+device = torch.device("cuda:0" if use_cuda else "cpu")
 ```
 
 # Define neighborhood mask
@@ -60,7 +63,7 @@ plt.imshow(neighborhood_kernel[0, 0].cpu())
 
 ```python
 class Automata(nn.Module):
-    def __init__(self, grid_size, n_channels):
+    def __init__(self, grid_size, n_channels, hidden_size, device):
 
         super(Automata, self).__init__()
 
@@ -73,12 +76,12 @@ class Automata(nn.Module):
                 [[[-1, -2, -1], [0, 0, 0], [1, 2, 1]]],
                 [[[0, 0, 0], [0, 1, 0], [0, 0, 0]]],
             ]
-        ).cuda()
+        ).to(device)
 
         self.mapper = nn.Sequential(
-            nn.Linear(3 * n_channels, 128),
+            nn.Linear(3 * n_channels, hidden_size),
             nn.ReLU(),
-            nn.Linear(128, n_channels),
+            nn.Linear(hidden_size, n_channels),
             nn.Tanh(),
         )
 
@@ -170,12 +173,13 @@ class Automata(nn.Module):
 # Train model
 
 ```python
-n_channels = 16
-n_epochs = 100
+n_channels = 4
+n_epochs = 250
 lr = 0.001 # learning rate
 batch_size = 8
+hidden_size = 64
 
-model = Automata((128, 128), n_channels).cuda()
+model = Automata((128, 128), n_channels, hidden_size, device).cuda()
 
 losses = []
 
@@ -221,6 +225,6 @@ plt.plot(losses)
 
 ```python
 video = utils.get_model_history(model, seed, 512)
-utils.channels_to_gif("../videos/optimization_channels.gif", video)
+utils.channels_to_gif("../videos/optimization_channels.gif", video, row_channels=2, col_channels=2)
 utils.colors_to_gif("../videos/optimization_colors.gif", video)
 ```

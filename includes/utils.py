@@ -36,7 +36,7 @@ def load_image(url, size, padding):
     img = img.resize((size, size), Image.ANTIALIAS)
 
     # normalize image intensities to (0,1) range
-    img = np.float32(img)/255.0
+    img = np.float32(img) / 255.0
     img = np.pad(img, ((padding, padding), (padding, padding), (0, 0)))
 
     # multiply intensities by alphas
@@ -71,7 +71,10 @@ def load_emoji(emoji, size, padding):
 
     code = hex(ord(emoji))[2:].lower()
     print(code)
-    url = 'https://github.com/samuelngs/apple-emoji-linux/raw/master/png/128/emoji_u%s.png' % code
+    url = (
+        "https://github.com/samuelngs/apple-emoji-linux/raw/master/png/128/emoji_u%s.png"
+        % code
+    )
     return load_image(url, size, padding)
 
 
@@ -89,8 +92,8 @@ def normalize(a):
     a: normalized array
     """
 
-    a = a-a.min()
-    a = a/a.max()
+    a = a - a.min()
+    a = a / a.max()
 
     return a
 
@@ -122,11 +125,7 @@ def get_model_history(model, seed_state, iterations):
     return video
 
 
-def channels_to_gif(output_path,
-                    video,
-                    fps=60,
-                    row_channels=4,
-                    col_channels=4):
+def channels_to_gif(output_path, video, fps=60, row_channels=4, col_channels=4):
     """
     Save a GIF of the channels over time, given the output
     of `get_model_history`
@@ -149,42 +148,45 @@ def channels_to_gif(output_path,
     channel_count = video.shape[-1]
     grid_size = (video.shape[1], video.shape[2])
 
-    assert row_channels * \
-        col_channels == channel_count, "Row-column channel product must equal total channel count"
+    if row_channels * col_channels != channel_count:
+        raise ValueError("Row-column channel product must equal total channel count")
 
     tiled = np.zeros(
-        (iterations, grid_size[0]*4, grid_size[1]*4), dtype=np.uint8)
+        (iterations, grid_size[0] * col_channels, grid_size[1] * row_channels),
+        dtype=np.uint8,
+    )
 
     k = 0
 
-    for i in range(row_channels):
-        for j in range(col_channels):
+    for i in range(col_channels):
+        for j in range(row_channels):
 
             patch = normalize(video[:, :, :, k])
 
             patch[video[:, :, :, 3] == 0] = 0
-            patch = 1-patch
-            patch = patch*255
+            patch = 1 - patch
+            patch = patch * 255
             patch = patch.astype(np.uint8)
 
-            tiled[:, grid_size[0]*i:grid_size[0] *
-                  (i+1), grid_size[1]*j:grid_size[1]*(j+1)] = patch
+            tiled[
+                :,
+                grid_size[0] * i : grid_size[0] * (i + 1),
+                grid_size[1] * j : grid_size[1] * (j + 1),
+            ] = patch
 
             k += 1
 
     tiled = tiled[:, :, :, None].repeat(3, axis=3)
 
-    tiled = [Image.fromarray(x, 'RGB') for x in tiled]
+    tiled = [Image.fromarray(x, "RGB") for x in tiled]
 
     imageio.mimwrite(output_path, tiled, fps=fps)
 
 
-def colors_to_gif(output_path,
-                  video,
-                  fps=60):
+def colors_to_gif(output_path, video, fps=60):
     """
-    Save a GIF of the first 4 RGBA channels, given
-    the output of `get_model_history
+    Save a GIF of the first 4 channels interpreted as RGBA
+    given the output of `get_model_history`
 
     Parameters
     ----------
@@ -197,15 +199,14 @@ def colors_to_gif(output_path,
     """
 
     video = video[:, :, :, :4]
-    video = video*255
+    video = video * 255
     video = video.astype(np.uint8)
 
     video = video.repeat(4, axis=1).repeat(4, axis=2)
 
-    background = Image.new(
-        'RGBA', (video.shape[1], video.shape[2]), (255, 255, 255))
+    background = Image.new("RGBA", (video.shape[1], video.shape[2]), (255, 255, 255))
 
-    video = [Image.fromarray(x, 'RGBA') for x in video]
+    video = [Image.fromarray(x, "RGBA") for x in video]
     video = [Image.alpha_composite(background, x) for x in video]
 
     imageio.mimwrite(output_path, video, fps=60)
