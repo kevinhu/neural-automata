@@ -30,6 +30,12 @@ In addition, an average of the two seed states produces the following (with the 
 
 ### 2. Control of growth stages
 
+The original paper showed that by using a pool to store training outputs, automata could be trained to persist and regenerate. Here in [2_metamorphosis.ipynb](https://github.com/kevinhu/neural-automata/blob/master/notebooks/2_metamorphosis.ipynb), the same pooling mechanism is employed to produce automata able to transition between stages, with the example here being cycling between two states:
+
+![metamorphosis](https://github.com/kevinhu/neural-automata/blob/master/videos/metamorphosis_colors.gif)
+
+It's likely possible to chain even more stages together, and it would be interesting to explore just how many can be used before the network starts failing or forgetting some states.
+
 ### 3. Alternative objectives
 
 ## Getting started
