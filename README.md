@@ -12,8 +12,15 @@ The original article showed that automata could be trained using recurrent neura
 
 This repository modifies the training environment to show some new properties.
 
-## Coupling of seed states to targets
+### 1. Coupling of seed states to targets
 
-## Control of growth stages
+### 2. Control of growth stages
 
-## Alternative objectives
+### 3. Alternative objectives
+
+## Getting started
+
+1. Install dependencies: `poetry install` (from within the repository)
+2. Install Jupyter kernel: `poetry run python -m ipykernel install --user`
+2. Inititialize virtual environment: `poetry shell`
+3. Start Jupyter: `jupyter notebook`
