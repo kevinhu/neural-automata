@@ -162,6 +162,8 @@ model.load_state_dict(
 )
 ```
 
+# Make videos
+
 ```python
 video = utils.get_model_history(model, seed, 1000)
 utils.channels_to_gif("../videos/metamorphosis_channels.gif", video)

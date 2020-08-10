@@ -31,6 +31,11 @@ import random
 
 import requests
 import io
+
+import sys
+sys.path.append("../includes")
+
+import utils
 ```
 
 ```python
@@ -48,6 +53,8 @@ neighborhood_kernel = neighborhood_kernel[None, None, :]
 
 plt.imshow(neighborhood_kernel[0, 0].cpu())
 ```
+
+# Initialize model
 
 ```python
 class Automata(nn.Module):
@@ -151,9 +158,11 @@ class Automata(nn.Module):
         return x, prev
 ```
 
+# Train model
+
 ```python
 n_channels = 16
-n_epochs = 250
+n_epochs = 100
 lr = 0.001
 batch_size = 8
 
@@ -201,34 +210,7 @@ plt.plot(losses)
 ```
 
 ```python
-with torch.no_grad():
-    out = model(seed[None, :], 512, keep_history=True)
-    video = model.history.cpu().detach()
-    video = video[:, 0, :4]
-    video = video.transpose(1, 3)
-```
-
-```python
-from matplotlib import animation
-from IPython.display import HTML
-
-fig = plt.figure()
-im = plt.imshow(video[0, :, :, 3])
-
-plt.close()
-
-
-def init():
-    im.set_data(video[0, :, :, 3])
-
-
-def animate(i):
-    im.set_data(video[i, :, :, 3])
-    return im
-
-
-anim = animation.FuncAnimation(
-    fig, animate, init_func=init, frames=video.shape[0], interval=50
-)
-HTML(anim.to_html5_video())
+video = utils.get_model_history(model, seed, 512)
+utils.channels_to_gif("../videos/optimization_channels.gif", video)
+utils.colors_to_gif("../videos/optimization_colors.gif", video)
 ```

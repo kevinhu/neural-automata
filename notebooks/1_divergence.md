@@ -13,10 +13,6 @@ jupyter:
 ---
 
 ```python
-! poetry run python -m ipykernel install --user
-```
-
-```python
 import torch
 from torch import nn
 
@@ -174,6 +170,8 @@ model.load_state_dict(
 seed_mix = seed.clone()
 seed_mix[4, 32, 32] = 0.5
 ```
+
+# Make videos
 
 ```python
 video = utils.get_model_history(model, seed_1, 128)
