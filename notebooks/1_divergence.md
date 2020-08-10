@@ -5,7 +5,7 @@ jupyter:
       extension: .md
       format_name: markdown
       format_version: '1.2'
-      jupytext_version: 1.5.0
+      jupytext_version: 1.4.2
   kernelspec:
     display_name: Python 3
     language: python
@@ -60,10 +60,10 @@ img_size = 64
 ```python
 n_channels = 16
 n_epochs = 10000
-lr = 0.001
-pool_size = 1024
+lr = 0.001 # learning rate
+pool_size = 1024 # number of states to store in the pool
 batch_size = 16
-hidden_size = 64
+hidden_size = 64 # size of the hidden layer in the perception network
 
 model = models.Automata((64, 64), n_channels, hidden_size, device).to(device)
 ```
@@ -80,6 +80,7 @@ seed[3:, 32, 32] = 1
 seed_1 = seed.clone()
 seed_2 = seed.clone()
 
+# flip the 5th value in the first seed
 seed_1[4, 32, 32] = 0
 
 seeds = torch.stack([seed_1, seed_2])
@@ -104,21 +105,27 @@ for i in range(n_epochs):
 
     iterations = random.randint(96, 128)
 
+    # indices to select from the pool
     pool_indices = torch.Tensor(random.sample(
         range(pool_size), batch_size)).long()
 
     initial_states = pool_initials[pool_indices]
     targets = pool_targets[pool_indices]
+    
+    # the target types (image_1 or image_2)
     target_ids = pool_target_ids[pool_indices]
 
     out = model(initial_states, iterations)
 
+    # first four channels, to match the target images
     phenotypes = out[:, :4].squeeze()
 
     optimizer.zero_grad()
 
     loss = criterion(phenotypes, targets)
 
+    # first calculate loss per seed so we can 
+    # sort later
     per_sample_loss = loss.mean((1, 2, 3))
     total_loss = per_sample_loss.mean()
 
@@ -141,10 +148,10 @@ for i in range(n_epochs):
 
     # low-loss outputs are tasked with mapping
     # the previous output to the same image
-
     replacements[max_loss_indices] = seeds[max_loss_targets]
     pool_initials[pool_indices] = replacements
 
+    # logging and checkpointing
     if i % 100 == 0:
 
         print(i, np.log10(float(total_loss.cpu().detach())))

@@ -5,7 +5,7 @@ jupyter:
       extension: .md
       format_name: markdown
       format_version: '1.2'
-      jupytext_version: 1.5.0
+      jupytext_version: 1.4.2
   kernelspec:
     display_name: Python 3
     language: python
@@ -37,6 +37,8 @@ sys.path.append("../includes")
 
 import utils
 ```
+
+# Define neighborhood mask
 
 ```python
 neighborhood = 25
@@ -122,6 +124,7 @@ class Automata(nn.Module):
 
         for i in range(iterations):
 
+            # get vitality of neighbors
             next_alive = (
                 nn.functional.max_pool2d(x[:, 3], (3, 3), stride=1, padding=1) > 1 / 8
             )
@@ -131,6 +134,8 @@ class Automata(nn.Module):
             alive_indicators = nn.functional.pad(
                 x[:, 3][:, None], [neighborhood // 2] * 4, mode="circular"
             )
+            
+            # apply neighborhood filter to eliminate too-dense
             neighbor_density = nn.functional.conv2d(
                 alive_indicators, neighborhood_kernel
             )
@@ -140,10 +145,12 @@ class Automata(nn.Module):
                 neighborhood_kernel.sum() * 0.25
             )
 
+            # keep only cells that have some number of 
+            # close neighbors, but not too many
             is_alive = next_alive * too_dense
 
+            # apply the update
             x = x + checkpoint.checkpoint(self.perception, x)
-
             x = x * is_alive
 
             x[:, :4].clamp_(0, 1)
@@ -152,6 +159,8 @@ class Automata(nn.Module):
 
                 model.history[i] = x.detach()
 
+            # keep the penultimate state for
+            # computing the stability loss
             if i == iterations - 2:
                 prev = x.clone()
 
@@ -163,7 +172,7 @@ class Automata(nn.Module):
 ```python
 n_channels = 16
 n_epochs = 100
-lr = 0.001
+lr = 0.001 # learning rate
 batch_size = 8
 
 model = Automata((128, 128), n_channels).cuda()
@@ -190,6 +199,7 @@ for i in range(n_epochs):
     alives = out[:, 3]
     prev_alives = prev[:, 3]
 
+    # use a multiplier to weight the vitality loss less
     vitality_loss = -alives.mean() * 0.1
     stability_loss = ((alives - prev_alives) ** 2).mean()
 

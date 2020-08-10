@@ -5,7 +5,7 @@ jupyter:
       extension: .md
       format_name: markdown
       format_version: '1.2'
-      jupytext_version: 1.5.0
+      jupytext_version: 1.4.2
   kernelspec:
     display_name: Python 3
     language: python
@@ -59,10 +59,10 @@ img_size = 64
 ```python
 n_channels = 16
 n_epochs = 10000
-lr = 0.001
-pool_size = 1024
-batch_size = 16
-hidden_size = 64
+lr = 0.001 # learning rate
+pool_size = 1024 # number of states to store in the pool
+batch_size = 16 
+hidden_size = 64 # size of the hidden layer in the perception network
 
 images = torch.stack([image_1, image_2])
 
@@ -76,6 +76,7 @@ model = models.Automata((64, 64), n_channels, hidden_size, device).to(device)
 seed = torch.zeros(n_channels, img_size, img_size).to(device)
 seed[3:, 32, 32] = 1
 
+# start by targeting all inputs to image_1
 pool_initials = seed[None, :].repeat(pool_size, 1, 1, 1)
 pool_targets = image_1[None, :].repeat(pool_size, 1, 1, 1)
 
@@ -93,23 +94,31 @@ optimizer = torch.optim.Adam(model.parameters(), lr=lr)
 
 for i in range(n_epochs):
 
+    # a fixed iteration helps the model
+    # learn to time transitions better
     iterations = 100
 
+    # indices to select from the pool
     pool_indices = torch.Tensor(random.sample(
         range(pool_size), batch_size)).long()
 
     initial_states = pool_initials[pool_indices]
     targets = pool_targets[pool_indices]
+    
+    # the target types (image_1 or image_2)
     target_ids = pool_target_ids[pool_indices]
 
     out = model(initial_states, iterations)
 
+    # first four channels, to match the target images
     phenotypes = out[:, :4].squeeze()
 
     optimizer.zero_grad()
 
     loss = criterion(phenotypes, targets)
 
+    # first calculate loss per seed so we can 
+    # sort later
     per_sample_loss = loss.mean((1, 2, 3))
     total_loss = per_sample_loss.mean()
 
@@ -129,8 +138,8 @@ for i in range(n_epochs):
     # high-loss outputs are re-tasked with
     # mapping the seed to the first image,
 
-    # low-loss outputs are tasked with mapping
-    # mapping to the other image
+    # low-loss outputs are tasked with mapping the
+    # output to the other image
     pool_target_ids[pool_indices[max_loss_indices]] = 0
     pool_target_ids[pool_indices[min_loss_indices]] = 1 - \
         pool_target_ids[pool_indices[min_loss_indices]]
@@ -141,6 +150,7 @@ for i in range(n_epochs):
 
     pool_initials[pool_indices] = replacements
 
+    # logging and checkpointing
     if i % 100 == 0:
 
         print(i, np.log10(float(total_loss.cpu().detach())))
