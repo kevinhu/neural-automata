@@ -14,7 +14,7 @@ This repository modifies the training environment to show some new properties.
 
 ### 1. Coupling of seed states to targets
 
-In [1_divergence.ipynb](https://github.com/kevinhu/neural-automata/blob/master/notebooks/1_divergence.ipynb) two seed states are trained to grow into two different target states under the same update network. The difference between the seeds is a single value at the 4th index of the center vector, which is 0 for one state and 1 for the other.
+In [1_divergence.ipynb](https://github.com/kevinhu/neural-automata/blob/master/notebooks/1_divergence.ipynb) two different seed states are trained to grow into two different target states under the same update network. The difference between the seeds is a single value at the 4th index of the center vector, which is 0 for one state and 1 for the other. Using just this difference, the network successfully produces entirely different outputs.
 
 Here is the output of the first seed:
 
@@ -22,7 +22,7 @@ Here is the output of the first seed:
   <img src="https://github.com/kevinhu/neural-automata/blob/master/videos/divergence_seed_1_colors.gif">
 </p>
 
-and here is the output of the second seed, with the exact same perception network:
+Here is the output of the second seed, with the exact same perception network:
 
 <p align="center">
   <img src="https://github.com/kevinhu/neural-automata/blob/master/videos/divergence_seed_2_colors.gif">
@@ -33,6 +33,8 @@ In addition, an average of the two seed states produces the following (with the 
 <p align="center">
   <img src="https://github.com/kevinhu/neural-automata/blob/master/videos/divergence_seed_mix_colors.gif">
 </p>
+
+As expected, a mix of the two seeds also produces a mix of the two targets. In theory, this approach could be used to couple even more seed states to targets, all under the same perception network.
 
 ### 2. Control of growth stages
 
@@ -46,12 +48,12 @@ It's likely possible to chain even more stages together, and it would be interes
 
 ### 3. Alternative objectives
 
-Besides setting image targets, it's also possible to specify other cost functions. In [3_optimization.ipynb](https://github.com/kevinhu/neural-automata/blob/master/notebooks/3_optimization.ipynb), a network with the same architecture is trained with two objectives:
+Besides using images as targets, other more abstract cost functions can be employed. In [3_optimization.ipynb](https://github.com/kevinhu/neural-automata/blob/master/notebooks/3_optimization.ipynb), a network with the same architecture is trained with two objectives:
 
 1. Vitality: maximize the sum of 'alive' state values (the 4th channel).
 2. Stability: minimize the discrepancy between the end and penultimate states.
 
-To prevent the trivial solution of a blanket coat, at each iteration a circular mask is applied such that each cell can only have a certain number of neighbors. The end result is an interesting layout that bears some resemblance to a [Turing pattern](https://en.wikipedia.org/wiki/Turing_pattern). Here, all 16 channels are shown in parallel.
+To prevent the trivial solution of a uniform `lawn`, at each iteration a circular mask is applied such that each cell can only have a certain number of neighbors. The end result is an interesting layout that bears some resemblance to a [Turing pattern](https://en.wikipedia.org/wiki/Turing_pattern). Here, all 16 channels are shown in parallel.
 
 <p align="center">
   <img src="https://github.com/kevinhu/neural-automata/blob/master/videos/optimization_channels.gif">
