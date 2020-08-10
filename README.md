@@ -1,6 +1,6 @@
 # neural-automata
 
-Neural cellular automata implemented in PyTorch, based on https://distill.pub/2020/growing-ca/ (GitHub: https://github.com/google-research/self-organising-systems).
+A PyTorch implementation of neural cellular automata, based on https://distill.pub/2020/growing-ca/ (GitHub: https://github.com/google-research/self-organising-systems).
 
 ## Additions
 
@@ -14,7 +14,7 @@ This repository modifies the training environment to show some new properties.
 
 ### 1. Coupling of seed states to targets
 
-In [1_divergence.ipynb](https://github.com/kevinhu/neural-automata/blob/master/notebooks/1_divergence.ipynb) two different seed states are trained to grow into two different target states under the same update network. The difference between the seeds is a single value at the 5th index of the center vector, which is 0 for one state and 1 for the other. Using just this difference, the network successfully produces entirely different outputs.
+In [1_divergence.ipynb](https://github.com/kevinhu/neural-automata/blob/master/notebooks/1_divergence.ipynb), two different seed states are trained to grow into two different target states under the same update network. The difference between the seeds is a single value at the 5th index of the center vector, which is 0 for one state and 1 for the other. Using just this difference, the network successfully produces entirely different outputs.
 
 Here is the output of the first seed:
 
@@ -38,7 +38,7 @@ As expected, a mix of the two seeds also produces a mix of the two targets. In t
 
 ### 2. Control of growth stages
 
-The original paper showed that by using a pool to store training outputs, automata could be trained to persist and regenerate. Here in [2_metamorphosis.ipynb](https://github.com/kevinhu/neural-automata/blob/master/notebooks/2_metamorphosis.ipynb), the same pooling mechanism is employed to produce automata able to transition between stages, with the example here being cycling between two states:
+The original paper showed that by using a pool to cache outputs during training, automata could be trained to persist and regenerate. In [2_metamorphosis.ipynb](https://github.com/kevinhu/neural-automata/blob/master/notebooks/2_metamorphosis.ipynb), the same pooling mechanism is employed to produce automata able to transition between stages, with the example here being cycling between two states:
 
 <p align="center">
   <img src="https://github.com/kevinhu/neural-automata/blob/master/videos/metamorphosis_colors.gif">
@@ -53,7 +53,7 @@ Besides using images as targets, other more abstract cost functions can be emplo
 1. Vitality: maximize the sum of 'alive' state values (the 4th channel).
 2. Stability: minimize the discrepancy between the end and penultimate states.
 
-To prevent the trivial solution of a uniform `lawn`, at each iteration a circular mask is applied such that each cell can only have a certain number of neighbors. The end result is an interesting layout that bears some resemblance to a [Turing pattern](https://en.wikipedia.org/wiki/Turing_pattern). For this objective, a smaller model using 4 channels and a network hidden size of 64 was trained and shown below:
+To prevent the trivial solution of a uniform "lawn," at each iteration a circular mask is applied such that each cell can only have a certain number of neighbors. The end result is an interesting layout that bears some resemblance to a [Turing pattern](https://en.wikipedia.org/wiki/Turing_pattern). For this objective, a smaller model using 4 channels and a network hidden size of 64 was trained and shown below:
 
 <p align="center">
   <img src="https://github.com/kevinhu/neural-automata/blob/master/videos/optimization_channels.gif">
