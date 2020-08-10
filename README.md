@@ -53,7 +53,7 @@ Besides using images as targets, other more abstract cost functions can be emplo
 1. Vitality: maximize the sum of 'alive' state values (the 4th channel).
 2. Stability: minimize the discrepancy between the end and penultimate states.
 
-To prevent the trivial solution of a uniform `lawn`, at each iteration a circular mask is applied such that each cell can only have a certain number of neighbors. The end result is an interesting layout that bears some resemblance to a [Turing pattern](https://en.wikipedia.org/wiki/Turing_pattern). Here, all 16 channels are shown in parallel.
+To prevent the trivial solution of a uniform `lawn`, at each iteration a circular mask is applied such that each cell can only have a certain number of neighbors. The end result is an interesting layout that bears some resemblance to a [Turing pattern](https://en.wikipedia.org/wiki/Turing_pattern). For this objective, a smaller model using 4 channels and a network hidden size of 64 was trained and shown below:
 
 <p align="center">
   <img src="https://github.com/kevinhu/neural-automata/blob/master/videos/optimization_channels.gif">
