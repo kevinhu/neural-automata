@@ -18,21 +18,29 @@ In [1_divergence.ipynb](https://github.com/kevinhu/neural-automata/blob/master/n
 
 Here is the output of the first seed:
 
-![seed_1](https://github.com/kevinhu/neural-automata/blob/master/videos/divergence_seed_1_colors.gif)
+<p align="center">
+  <img src="https://github.com/kevinhu/neural-automata/blob/master/videos/divergence_seed_1_colors.gif">
+</p>
 
 and here is the output of the second seed, with the exact same perception network:
 
-![seed_2](https://github.com/kevinhu/neural-automata/blob/master/videos/divergence_seed_2_colors.gif)
+<p align="center">
+  <img src="https://github.com/kevinhu/neural-automata/blob/master/videos/divergence_seed_2_colors.gif">
+</p>
 
 In addition, an average of the two seed states produces the following (with the perception network the same as the previous two):
 
-![seed_mix](https://github.com/kevinhu/neural-automata/blob/master/videos/divergence_seed_mix_colors.gif)
+<p align="center">
+  <img src="https://github.com/kevinhu/neural-automata/blob/master/videos/divergence_seed_mix_colors.gif">
+</p>
 
 ### 2. Control of growth stages
 
 The original paper showed that by using a pool to store training outputs, automata could be trained to persist and regenerate. Here in [2_metamorphosis.ipynb](https://github.com/kevinhu/neural-automata/blob/master/notebooks/2_metamorphosis.ipynb), the same pooling mechanism is employed to produce automata able to transition between stages, with the example here being cycling between two states:
 
-![metamorphosis](https://github.com/kevinhu/neural-automata/blob/master/videos/metamorphosis_colors.gif)
+<p align="center">
+  <img src="https://github.com/kevinhu/neural-automata/blob/master/videos/metamorphosis_colors.gif">
+</p>
 
 It's likely possible to chain even more stages together, and it would be interesting to explore just how many can be used before the network starts failing or forgetting some states.
 
